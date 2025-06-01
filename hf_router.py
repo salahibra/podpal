@@ -4,9 +4,15 @@ from typing import List, Optional
 from langchain.llms.base import LLM
 from pydantic import Field
 import os
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+HF_TOKEN = os.getenv("HUGGINGFACE_HUB_TOKEN")
 # —————— Config ——————
 API_URL = "https://router.huggingface.co/together/v1/chat/completions"
-HF_TOKEN = os.getenv("HUGGINGFACE_HUB_TOKEN")
+
 if not HF_TOKEN:
     raise RuntimeError("Please set your HF token in HUGGINGFACE_HUB_TOKEN")
 
