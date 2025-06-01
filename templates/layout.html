@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}PodcastAI App{% endblock %}</title>
+
+  <!-- Bootstrap CSS v5 (facultatif, mais conseillé) -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- (Facultatif) Votre CSS perso -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+</head>
+<body class="bg-light">
+  <header class="bg-white shadow-sm mb-4">
+    <div class="container py-3">
+      <h2 class="mb-0">PodcastAI</h2>
+    </div>
+  </header>
+
+  <main class="container">
+    {% block content %}
+    <!-- Contenu spécifique à chaque page -->
+    {% endblock %}
+  </main>
+
+  <footer class="bg-white text-center py-3 mt-5 shadow-sm">
+    &copy; 2025 PodcastAI
+  </footer>
+
+  <!-- jQuery + Bootstrap JS (bundle) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+  ></script>
+
+  {% block scripts %}
+  <!-- Placez ici un <script> si nécessaire -->
+  {% endblock %}
+</body>
+</html>

@@ -1,0 +1,749 @@
+{# templates/index.html #}
+{% extends "layout.html" %}
+
+{% block title %}Accueil – PodcastAI{% endblock %}
+
+{% block content %}
+  <div class="container-fluid px-4">
+    <!-- Header Section -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center py-3">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <div class="bg-purple rounded-3 p-2" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-podcast text-white"></i>
+              </div>
+            </div>
+            <h2 class="mb-0 fw-bold">PodcastAI</h2>
+          </div>
+          <button class="btn btn-outline-secondary rounded-pill">
+            <i class="fas fa-cog me-2"></i>Settings
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    {% if error %}
+      <div class="alert alert-danger rounded-4 mb-4">{{ error }}</div>
+    {% endif %}
+
+    <!-- Main Content Area -->
+    <div class="row g-4">
+      <!-- Left Column - Import and Player -->
+      <div class="col-lg-8">
+        <!-- Import Section -->
+        <div class="card border-0 shadow-sm rounded-4 mb-4 bg-light" style="background: linear-gradient(135deg, #f8f9ff 0%, #e8ecff 100%);">
+          <div class="card-body p-5 text-center">
+            <div class="mb-4">
+              <div class="bg-purple rounded-circle mx-auto mb-3" style="width: 80px; height: 80px; display: flex; align-items: center; justify-content: center;">
+                <i class="fas fa-cloud-upload-alt text-white" style="font-size: 2rem;"></i>
+              </div>
+            </div>
+
+            <h4 class="fw-bold mb-2">Importer un Podcast</h4>
+            <p class="text-muted mb-4">ou collez un lien YouTube</p>
+
+            <div class="row justify-content-center">
+              <div class="col-md-8">
+                <div class="mb-3">
+                  <select id="source_type" name="source_type" class="form-select form-select-lg rounded-pill">
+                    <option value="" selected disabled>Choisissez votre source…</option>
+                    <option value="youtube">URL YouTube</option>
+                    <option value="audio_file">Fichier audio (mp3, wav)</option>
+                    <option value="text_file">Fichier texte (.txt)</option>
+                  </select>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                  <div id="youtube_div" class="mb-3 d-none">
+                    <input
+                      type="url"
+                      id="youtube_url"
+                      name="youtube_url"
+                      class="form-control form-control-lg rounded-pill"
+                      placeholder="https://www.youtube.com/..."
+                    />
+                  </div>
+
+                  <div id="audio_div" class="mb-3 d-none">
+                    <input
+                      type="file"
+                      id="audio_upload"
+                      name="audio_upload"
+                      class="form-control form-control-lg rounded-pill"
+                      accept=".mp3, .wav"
+                    />
+                  </div>
+
+                  <div id="text_div" class="mb-3 d-none">
+                    <input
+                      type="file"
+                      id="text_upload"
+                      name="text_upload"
+                      class="form-control form-control-lg rounded-pill"
+                      accept=".txt"
+                    />
+                  </div>
+
+                  <input type="hidden" name="source_type" id="hidden_source_type" />
+                  <button type="submit" class="btn btn-purple btn-lg rounded-pill px-5">
+                    <i class="fas fa-upload me-2"></i>Importer
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audio Player Section -->
+        {% if audio_filename %}
+          <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-center mb-3">
+                <div class="bg-purple rounded-3 me-3 p-2" style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">
+                  <i class="fas fa-headphones text-white"></i>
+                </div>
+                <div>
+                  <h5 class="mb-1 fw-bold">Intelligence Artificielle: Le Futur</h5>
+                  <p class="mb-0 text-muted small">Par Dr. Sophie Martin • 45:30</p>
+                </div>
+              </div>
+
+              <audio
+                id="audioPlayer"
+                class="w-100 mb-3 d-none"
+                controls
+                preload="metadata"
+              >
+                <source
+                  src="{{ url_for('uploaded_file', filename=audio_filename) }}"
+                  type="audio/{{ audio_filename.split('.')[-1] }}"
+                />
+              </audio>
+
+              <!-- Custom Audio Controls -->
+              <div class="d-flex align-items-center mb-3">
+                <button class="btn btn-outline-secondary rounded-circle me-3" id="prevBtn">
+                  <i class="fas fa-step-backward"></i>
+                </button>
+                <button class="btn btn-purple rounded-circle me-3" id="playPauseBtn" style="width: 50px; height: 50px;">
+                  <i class="fas fa-play"></i>
+                </button>
+                <button class="btn btn-outline-secondary rounded-circle me-3" id="nextBtn">
+                  <i class="fas fa-step-forward"></i>
+                </button>
+                <div class="flex-grow-1">
+                  <div class="progress rounded-pill mb-1" style="height: 8px;">
+                    <div
+                      class="progress-bar bg-purple rounded-pill"
+                      role="progressbar"
+                      style="width: 0%;"
+                      aria-valuenow="0"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                    ></div>
+                  </div>
+                  <div class="d-flex justify-content-between">
+                    <small id="currentTime" class="text-muted">0:00</small>
+                    <small id="totalTime" class="text-muted">0:00</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Content Tabs -->
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-body p-0">
+            <!-- Tab Navigation -->
+            <div class="border-bottom px-4 pt-4">
+              <ul class="nav nav-pills nav-fill" id="podcastTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button
+                    class="nav-link active rounded-pill me-2"
+                    id="transcription-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#transcription"
+                    type="button"
+                    role="tab"
+                  >
+                    <i class="fas fa-file-alt me-2"></i>Transcription
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button
+                    class="nav-link rounded-pill me-2"
+                    id="chapters-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#chapters"
+                    type="button"
+                    role="tab"
+                  >
+                    <i class="fas fa-list me-2"></i>Chapitres
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button
+                    class="nav-link rounded-pill me-2"
+                    id="summary-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#summary"
+                    type="button"
+                    role="tab"
+                  >
+                    <i class="fas fa-compress-alt me-2"></i>Résumé
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button
+                    class="nav-link rounded-pill"
+                    id="questions-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#questions"
+                    type="button"
+                    role="tab"
+                  >
+                    <i class="fas fa-comments me-2"></i>Questions
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="tab-content p-4" id="podcastTabsContent">
+              <!-- Transcription Tab -->
+              <div class="tab-pane fade show active" id="transcription" role="tabpanel">
+                {% if raw_text %}
+                  <div class="bg-light rounded-4 p-4" style="max-height: 500px; overflow-y: auto;">
+                    <pre class="mb-0" style="white-space: pre-wrap; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">{{ raw_text }}</pre>
+                  </div>
+                {% else %}
+                  <div class="text-center py-5">
+                    <i class="fas fa-file-alt text-muted mb-3" style="font-size: 3rem;"></i>
+                    <p class="text-muted">Aucune transcription disponible. Importez un podcast.</p>
+                  </div>
+                {% endif %}
+              </div>
+
+              <!-- Chapters Tab -->
+              <div class="tab-pane fade" id="chapters" role="tabpanel">
+                <div class="mb-3">
+                  <button id="chaptersButton" class="btn btn-outline-purple rounded-pill">
+                    <i class="fas fa-sync me-2"></i>Charger les chapitres
+                  </button>
+                </div>
+                <div class="row">
+                  <div class="col-md-4">
+                    <ul id="chaptersList" class="list-group list-group-flush">
+                      {% if not raw_text %}
+                        <li class="list-group-item border-0 text-muted">
+                          Importez un podcast pour voir les chapitres.
+                        </li>
+                      {% endif %}
+                    </ul>
+                  </div>
+                  <div class="col-md-8">
+                    <div id="chapterContent" class="bg-light rounded-4 p-4" style="min-height: 300px;">
+                      {% if not raw_text %}
+                        <div class="text-center py-5">
+                          <i class="fas fa-book-open text-muted mb-3" style="font-size: 2rem;"></i>
+                          <em class="text-muted">Sélectionnez un chapitre pour voir son contenu.</em>
+                        </div>
+                      {% else %}
+                        <div class="text-center py-5">
+                          <i class="fas fa-book-open text-muted mb-3" style="font-size: 2rem;"></i>
+                          <em class="text-muted">Choisissez un chapitre dans la liste à gauche.</em>
+                        </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Summary Tab -->
+              <div class="tab-pane fade" id="summary" role="tabpanel">
+                <div class="mb-3">
+                  <button id="summaryButton" class="btn btn-outline-purple rounded-pill">
+                    <i class="fas fa-magic me-2"></i>Charger le résumé
+                  </button>
+                </div>
+                <div id="summaryResult" class="bg-light rounded-4 p-4" style="min-height: 300px;">
+                  {% if not raw_text %}
+                    <div class="text-center py-5">
+                      <i class="fas fa-compress-alt text-muted mb-3" style="font-size: 2rem;"></i>
+                      <em class="text-muted">Importez un podcast pour générer un résumé.</em>
+                    </div>
+                  {% else %}
+                    <div class="text-center py-5">
+                      <i class="fas fa-compress-alt text-muted mb-3" style="font-size: 2rem;"></i>
+                      <em class="text-muted">Cliquez sur "Charger le résumé" pour voir le résumé.</em>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Questions Tab -->
+              <div class="tab-pane fade" id="questions" role="tabpanel">
+                <!-- Chat Window -->
+                <div id="chatWindow" class="chat-window bg-light rounded-4 p-4 mb-4" style="height: 400px; overflow-y: auto;">
+                  {% if not rag_ready %}
+                    <div class="d-flex mb-3">
+                      <div class="bg-white rounded-4 p-3 shadow-sm" style="max-width: 80%;">
+                        <p class="mb-2">Importez un podcast pour activer le Chatbot RAG.</p>
+                      </div>
+                    </div>
+                  {% else %}
+                    <div class="d-flex mb-3">
+                      <div class="bg-white rounded-4 p-3 shadow-sm" style="max-width: 80%;">
+                        <p class="mb-2">Questions suggérées :</p>
+                        <div class="d-flex flex-wrap gap-2">
+                          <span class="badge bg-light text-dark rounded-pill px-3 py-2 suggested-question" style="cursor: pointer;">"Quels sont les principaux défis éthiques de l'IA ?"</span>
+                          <span class="badge bg-light text-dark rounded-pill px-3 py-2 suggested-question" style="cursor: pointer;">"Comment l'IA va-t-elle impacter le marché du travail ?"</span>
+                          <span class="badge bg-light text-dark rounded-pill px-3 py-2 suggested-question" style="cursor: pointer;">"Quelles sont les applications concrètes de l'IA aujourd'hui ?"</span>
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+
+                <!-- Question Input -->
+                <div class="d-flex gap-3">
+                  <input
+                    type="text"
+                    id="questionInput"
+                    class="form-control form-control-lg rounded-pill"
+                    placeholder="Posez votre question sur le contenu…"
+                    {% if not rag_ready %} disabled {% endif %}
+                  />
+                  <button
+                    id="askButton"
+                    class="btn btn-purple rounded-circle"
+                    style="width: 50px; height: 50px;"
+                    {% if not rag_ready %} disabled {% endif %}
+                  >
+                    <i class="fas fa-paper-plane"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column - Recommended Podcasts -->
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-4">Podcasts Recommandés</h5>
+
+            <!-- Podcast Card 1 -->
+            <div class="d-flex align-items-center mb-4 p-3 rounded-4 bg-light">
+              <div class="me-3">
+                <img src="https://via.placeholder.com/60x60/8B5CF6/FFFFFF?text=AI" class="rounded-3" alt="Technologie" style="width: 60px; height: 60px; object-fit: cover;" />
+              </div>
+              <div class="flex-grow-1">
+                <span class="badge bg-purple text-white mb-1">Technologie</span>
+                <h6 class="mb-1 fw-semibold">L'impact de l'IA en 2025</h6>
+                <p class="text-muted mb-0 small">45:30</p>
+              </div>
+            </div>
+
+            <!-- Podcast Card 2 -->
+            <div class="d-flex align-items-center mb-4 p-3 rounded-4 bg-light">
+              <div class="me-3">
+                <img src="https://via.placeholder.com/60x60/10B981/FFFFFF?text=RB" class="rounded-3" alt="Innovation" style="width: 60px; height: 60px; object-fit: cover;" />
+              </div>
+              <div class="flex-grow-1">
+                <span class="badge bg-success text-white mb-1">Innovation</span>
+                <h6 class="mb-1 fw-semibold">Robots et Société</h6>
+                <p class="text-muted mb-0 small">32:15</p>
+              </div>
+            </div>
+
+            <!-- Podcast Card 3 -->
+            <div class="d-flex align-items-center mb-4 p-3 rounded-4 bg-light">
+              <div class="me-3">
+                <img src="https://via.placeholder.com/60x60/059669/FFFFFF?text=TN" class="rounded-3" alt="Tech News" style="width: 60px; height: 60px; object-fit: cover;" />
+              </div>
+              <div class="flex-grow-1">
+                <span class="badge bg-info text-white mb-1">Tech News</span>
+                <h6 class="mb-1 fw-semibold">Données et Confidentialité</h6>
+                <p class="text-muted mb-0 small">28:45</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Inline Styles (you can move to static/css/styles.css if preferred) -->
+  <style>
+    :root {
+      --purple-primary: #8B5CF6;
+      --purple-light: #A78BFA;
+      --purple-dark: #7C3AED;
+    }
+
+    .bg-purple {
+      background-color: var(--purple-primary) !important;
+    }
+
+    .btn-purple {
+      background-color: var(--purple-primary);
+      border-color: var(--purple-primary);
+      color: white;
+    }
+
+    .btn-purple:hover {
+      background-color: var(--purple-dark);
+      border-color: var(--purple-dark);
+      color: white;
+    }
+
+    .btn-outline-purple {
+      border-color: var(--purple-primary);
+      color: var(--purple-primary);
+    }
+
+    .btn-outline-purple:hover {
+      background-color: var(--purple-primary);
+      border-color: var(--purple-primary);
+      color: white;
+    }
+
+    .nav-pills .nav-link.active {
+      background-color: var(--purple-primary);
+    }
+
+    .nav-pills .nav-link {
+      color: #6B7280;
+      border: 1px solid transparent;
+    }
+
+    .nav-pills .nav-link:hover:not(.active) {
+      background-color: rgba(139, 92, 246, 0.1);
+      color: var(--purple-primary);
+    }
+
+    .chapter-item {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .chapter-item:hover {
+      background-color: rgba(139, 92, 246, 0.1);
+      border-color: var(--purple-primary);
+    }
+
+    .suggested-question:hover {
+      background-color: var(--purple-primary) !important;
+      color: white !important;
+    }
+
+    .rounded-4 {
+      border-radius: 1rem !important;
+    }
+
+    .shadow-sm {
+      box-shadow: 0 .125rem .25rem rgba(0,0,0,.075) !important;
+    }
+
+    /* WhatsApp‐style chat bubbles (if needed) */
+    .chat-window {
+      background-color: #ECE5DD !important;
+    }
+  </style>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  // --- 1) Affichage conditionnel des champs d'import --- #
+  const sourceSelect = document.getElementById("source_type");
+  const youtubeDiv   = document.getElementById("youtube_div");
+  const audioDiv     = document.getElementById("audio_div");
+  const textDiv      = document.getElementById("text_div");
+  const hiddenType   = document.getElementById("hidden_source_type");
+
+  sourceSelect.addEventListener("change", function() {
+    youtubeDiv.classList.add("d-none");
+    audioDiv.classList.add("d-none");
+    textDiv.classList.add("d-none");
+
+    const val = this.value;
+    hiddenType.value = val;
+
+    if (val === "youtube") {
+      youtubeDiv.classList.remove("d-none");
+    } else if (val === "audio_file") {
+      audioDiv.classList.remove("d-none");
+    } else if (val === "text_file") {
+      textDiv.classList.remove("d-none");
+    }
+  });
+
+  // --- 2) Custom Audio Player Controls --- #
+  const audioPlayer = document.getElementById("audioPlayer");
+  const playPauseBtn = document.getElementById("playPauseBtn");
+  const progressBar = document.querySelector(".progress-bar");
+  const currentTimeEl = document.getElementById("currentTime");
+  const totalTimeEl = document.getElementById("totalTime");
+
+  if (audioPlayer && playPauseBtn) {
+    // Une fois les métadonnées chargées, on montre le lecteur et on met à jour la durée totale
+    audioPlayer.addEventListener("loadedmetadata", function() {
+      audioPlayer.classList.remove("d-none");
+      const formatTime = t => {
+        const m = Math.floor(t / 60);
+        const s = Math.floor(t % 60).toString().padStart(2, "0");
+        return `${m}:${s}`;
+      };
+      totalTimeEl.textContent = formatTime(audioPlayer.duration);
+    });
+
+    playPauseBtn.addEventListener("click", function() {
+      if (audioPlayer.paused) {
+        audioPlayer.play();
+        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
+      } else {
+        audioPlayer.pause();
+        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+      }
+    });
+
+    audioPlayer.addEventListener("timeupdate", function() {
+      const pct = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+      progressBar.style.width = pct + "%";
+
+      const formatTime = t => {
+        const m = Math.floor(t / 60);
+        const s = Math.floor(t % 60).toString().padStart(2, "0");
+        return `${m}:${s}`;
+      };
+
+      currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
+    });
+
+    audioPlayer.addEventListener("ended", function() {
+      playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
+    });
+  }
+
+  // --- 3) Chapitres (GET /get_chapters) --- #
+  const chaptersBtn = document.getElementById("chaptersButton");
+  if (chaptersBtn) {
+    const chaptersList   = document.getElementById("chaptersList");
+    const chapterContent = document.getElementById("chapterContent");
+
+    chaptersBtn.addEventListener("click", function() {
+      chaptersBtn.disabled = true;
+      chaptersBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Chargement…';
+
+      fetch("/get_chapters")
+        .then(res => res.json())
+        .then(data => {
+          // Si l’API renvoie une erreur
+          if (data.error) {
+            chaptersList.innerHTML = `<li class="list-group-item text-danger border-0">${data.error}</li>`;
+            chaptersBtn.disabled = false;
+            chaptersBtn.innerHTML = '<i class="fas fa-sync me-2"></i>Charger les chapitres';
+            return;
+          }
+
+          // Aucun chapitre retourné (tableau vide)
+          if (!Array.isArray(data.chapters) || data.chapters.length === 0) {
+            chaptersList.innerHTML = `
+              <li class="list-group-item text-muted border-0">
+                Aucun chapitre disponible. Importez d’abord un podcast.
+              </li>`;
+            chaptersBtn.disabled = false;
+            chaptersBtn.innerHTML = '<i class="fas fa-sync me-2"></i>Charger les chapitres';
+            return;
+          }
+
+          // Affichage des chapitres retrouvés
+          let html = "";
+          data.chapters.forEach(chap => {
+            html += `
+              <li class="list-group-item chapter-item border-0 rounded-3 mb-2" data-index="${chap.index}" style="cursor: pointer;">
+                <i class="fas fa-play-circle me-2 text-purple"></i>${chap.title}
+              </li>`;
+          });
+          chaptersList.innerHTML = html;
+          chaptersBtn.disabled = false;
+          chaptersBtn.innerHTML = '<i class="fas fa-sync me-2"></i>Recharger les chapitres';
+
+          // Ajout des écouteurs de clic pour chaque chapitre
+          document.querySelectorAll(".chapter-item").forEach(el => {
+            el.addEventListener("click", function() {
+              // Surbrillance de l’élément sélectionné
+              document.querySelectorAll(".chapter-item").forEach(item => item.classList.remove("bg-light"));
+              this.classList.add("bg-light");
+
+              const idx = this.dataset.index;
+              fetch(`/get_chapter_content/${idx}`)
+                .then(resp => resp.json())
+                .then(respData => {
+                  if (respData.error) {
+                    chapterContent.innerHTML = `<div class="alert alert-danger rounded-4">${respData.error}</div>`;
+                    return;
+                  }
+                  chapterContent.innerHTML = `
+                    <h5 class="fw-bold mb-3">${data.chapters[idx].title}</h5>
+                    <p class="lh-lg">${respData.content}</p>
+                  `;
+                })
+                .catch(err => {
+                  console.error(err);
+                  chapterContent.innerHTML = `<div class="alert alert-danger rounded-4">Erreur chargement chapitre.</div>`;
+                });
+            });
+          });
+        })
+        .catch(err => {
+          console.error(err);
+          chaptersList.innerHTML = `<li class="list-group-item text-danger border-0">Erreur réseau.</li>`;
+          chaptersBtn.disabled = false;
+          chaptersBtn.innerHTML = '<i class="fas fa-sync me-2"></i>Charger les chapitres';
+        });
+    });
+  }
+
+  // --- 4) Résumé (GET /get_summary) --- #
+  const summaryBtn = document.getElementById("summaryButton");
+  if (summaryBtn) {
+    const summaryResult = document.getElementById("summaryResult");
+
+    summaryBtn.addEventListener("click", function() {
+      summaryBtn.disabled = true;
+      summaryBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Chargement…';
+
+      fetch("/get_summary")
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            summaryResult.innerHTML = `<div class="alert alert-danger rounded-4">${data.error}</div>`;
+            summaryBtn.disabled = false;
+            summaryBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Charger le résumé';
+            return;
+          }
+          summaryResult.innerHTML = `<div class="lh-lg">${data.summary}</div>`;
+          summaryBtn.disabled = false;
+          summaryBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Recharger le résumé';
+        })
+        .catch(err => {
+          console.error(err);
+          summaryResult.innerHTML = `<div class="alert alert-danger rounded-4">Erreur réseau.</div>`;
+          summaryBtn.disabled = false;
+          summaryBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Charger le résumé';
+        });
+    });
+  }
+
+  // --- 5) RAG Chat (POST /rag_chat) --- #
+  const askBtn = document.getElementById("askButton");
+  const questionInput = document.getElementById("questionInput");
+  const chatWindow = document.getElementById("chatWindow");
+
+  // Si l’utilisateur clique sur une question suggérée
+  document.querySelectorAll(".suggested-question").forEach(btn => {
+    btn.addEventListener("click", function() {
+      questionInput.value = this.textContent.replace(/"/g, '');
+      askBtn.click();
+    });
+  });
+
+  // Appuyer sur “Entrée” envoie la question
+  if (questionInput) {
+    questionInput.addEventListener("keypress", function(e) {
+      if (e.key === "Enter" && !askBtn.disabled) {
+        askBtn.click();
+      }
+    });
+  }
+
+  if (askBtn) {
+    askBtn.addEventListener("click", function() {
+      const question = questionInput.value.trim();
+      if (!question) {
+        return;
+      }
+
+      // Afficher la bulle utilisateur
+      const userMessage = document.createElement("div");
+      userMessage.className = "d-flex justify-content-end mb-3";
+      userMessage.innerHTML = `
+        <div class="bg-purple text-white rounded-4 p-3" style="max-width: 80%;">
+          <p class="mb-0">${question}</p>
+        </div>
+      `;
+      chatWindow.appendChild(userMessage);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+
+      askBtn.disabled = true;
+      askBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      questionInput.value = "";
+
+      fetch("/rag_chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      })
+        .then(res => res.json().then(data => ({ status: res.status, body: data })))
+        .then(({ status, body }) => {
+          const botMessage = document.createElement("div");
+          botMessage.className = "d-flex mb-3";
+
+          if (status !== 200) {
+            botMessage.innerHTML = `
+              <div class="bg-danger text-white rounded-4 p-3" style="max-width: 80%;">
+                <p class="mb-0">${body.error || "Erreur."}</p>
+              </div>
+            `;
+          } else {
+            let sourcesHtml = "";
+            if (body.sources && body.sources.length) {
+              sourcesHtml = `
+                <div class="mt-2 pt-2 border-top">
+                  <small class="text-muted">Sources: ${body.sources
+                    .map(src => `<code class="small">${src}</code>`)
+                    .join(", ")}</small>
+                </div>
+              `;
+            }
+
+            botMessage.innerHTML = `
+              <div class="bg-white rounded-4 p-3 shadow-sm" style="max-width: 80%;">
+                <p class="mb-0 lh-lg">${body.answer}</p>
+                ${sourcesHtml}
+              </div>`;
+          }
+
+          chatWindow.appendChild(botMessage);
+          chatWindow.scrollTop = chatWindow.scrollHeight;
+          askBtn.disabled = false;
+          askBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+        })
+        .catch(err => {
+          console.error(err);
+          const errorMsg = document.createElement("div");
+          errorMsg.className = "d-flex mb-3";
+          errorMsg.innerHTML = `
+            <div class="bg-danger text-white rounded-4 p-3" style="max-width: 80%;">
+              <p class="mb-0">Erreur réseau.</p>
+            </div>`;
+          chatWindow.appendChild(errorMsg);
+          chatWindow.scrollTop = chatWindow.scrollHeight;
+          askBtn.disabled = false;
+          askBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+        });
+    });
+  }
+});
+</script>
+{% endblock %}

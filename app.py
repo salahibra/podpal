@@ -34,7 +34,7 @@ def main():
 
     ## chaptering 
 
-    chapters = chaptering.segment_by_topic(raw_text, threshold=0.2)
+    chapters = chaptering.segment_by_topic(raw_text, threshold=0.45)
     print(f"Nombre total de chapitres : {len(chapters)}")
     ## print number of words in each chapter
     for i, chapter in enumerate(chapters, 1):
