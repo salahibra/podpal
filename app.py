@@ -8,7 +8,7 @@ from rag_utils import (
     build_and_get_rag_chain,
     ask_questions_loop
 )
-
+import model
 # Configurer le logger global
 logging.basicConfig(
     level=logging.INFO,
@@ -36,8 +36,19 @@ def main():
 
     chapters = chaptering.segment_by_topic(raw_text, threshold=0.45)
     print(f"Nombre total de chapitres : {len(chapters)}")
+    ## print number of words in each chapter
+    for i, chapter in enumerate(chapters, 1):
+        print(f"Chapitre {i} : {len(chapter.split())} words")
     for i, chapter in enumerate(chapters, 1):
         print(f"Chapitre {i} :\n{chapter}\n")
+    # summarize chapters and global
+    summaries = model.summarize_chapters_and_global(chapters,
+                                        model_path=os.getenv("MODEL_PATH"),
+                                        output_path="data/summaries.json")
+    print("\n----- Résumé des chapitres et résumé global -----")
+    print(f"Résumé global : {summaries['global_summary']}\n")
+    for i, summary in enumerate(summaries['chapter_summaries'], 1):
+        print(f"Résumé Chapitre {i} : {summary}\n")
     # 2) Prétraitement : chunking + indexation Chroma
     persist_dir = "data/vectorstores/chunks"
     process_transcript(raw_text, persist_dir=persist_dir)
