@@ -34,9 +34,3 @@ def segment_by_topic(text, threshold=0.5):
         chapters.append(current_chapter.strip())
     
     return chapters
-
-# Example usage
-chapters = segment_by_topic(result["text"], threshold=0.2)
-for i, chapter in enumerate(chapters, 1):
-    print(f"Chapter {i}:\n{chapter}\n")
-print(f"Total number of chapters: {len(chapters)}")
