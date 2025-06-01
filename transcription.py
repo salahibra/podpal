@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 # 1) Initialiser UNE SEULE instance WhisperModel (small, int8)
 _whisper_model = WhisperModel(
-    model_size_or_path="small",
+    model_size_or_path="tiny",
     device="cpu",
     compute_type="int8"
 )

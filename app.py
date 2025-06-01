@@ -1,5 +1,5 @@
 
-
+import chaptering
 import os
 import logging
 from rag_utils import (
@@ -29,7 +29,15 @@ def main():
     print("\n----- Aperçu du transcript (200 premiers caractères) -----")
     print(raw_text[:200].replace("\n", " "))
     print("…\n")
+    print("----- Fin de l'aperçu -----\n")
+    print("Segmenter le transcript en chapitres par thème (topic segmentation)\n")
 
+    ## chaptering 
+
+    chapters = chaptering.segment_by_topic(raw_text, threshold=0.2)
+    print(f"Nombre total de chapitres : {len(chapters)}")
+    for i, chapter in enumerate(chapters, 1):
+        print(f"Chapitre {i} :\n{chapter}\n")
     # 2) Prétraitement : chunking + indexation Chroma
     persist_dir = "data/vectorstores/chunks"
     process_transcript(raw_text, persist_dir=persist_dir)
@@ -40,7 +48,7 @@ def main():
     except FileNotFoundError as e:
         print(str(e))
         return
-
+    
     # 4) Boucle interactive de Q&A
     ask_questions_loop(chain, retriever)
 
