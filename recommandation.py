@@ -7,6 +7,7 @@ from langchain.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.schema import Document
 import os
+import time
 
 
 
@@ -21,7 +22,12 @@ def run_recommendation_from_summary_chroma(top_k=5, persist_dir="data/vectorstor
     embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     vectorstore = Chroma(persist_directory=persist_dir, embedding_function=embedding_model)
 
+    start_time = time.time() 
+
     results = vectorstore.similarity_search_with_relevance_scores(query_text, k=top_k)
+
+    elapsed = time.time() - start_time
+    print(f"\n⚡ Temps de réponse pour la requête : {elapsed:.4f} secondes\n")
 
     print(f"\n📌 Résultats pour le résumé global :\n\"{query_text}\"\n")
     for i, (doc, score) in enumerate(results, 1):
