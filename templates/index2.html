@@ -185,16 +185,30 @@
                     <i class="fas fa-list me-2"></i>Chapitres
                   </button>
                 </li>
-                <li class="nav-item" role="presentation">
+                <!-- summaries for each chapter -->
+                 <li class="nav-item" role="presentation">
                   <button
                     class="nav-link rounded-pill me-2"
-                    id="summary-tab"
+                    id="summaries-tab"
                     data-bs-toggle="tab"
-                    data-bs-target="#summary"
+                    data-bs-target="#summaries"
                     type="button"
                     role="tab"
                   >
-                    <i class="fas fa-compress-alt me-2"></i>Résumé
+                    <i class="fas fa-book me-2"></i>Résumé des Chapitres
+                  </button>
+                </li>
+                <!-- global summary -->
+                <li class="nav-item" role="presentation">
+                  <button
+                    class="nav-link rounded-pill me-2"
+                    id="global-summary-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#global-summary"
+                    type="button"
+                    role="tab"
+                  >
+                    <i class="fas fa-book me-2"></i>Résumé Global
                   </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -262,29 +276,51 @@
                   </div>
                 </div>
               </div>
-
-              <!-- Summary Tab -->
-              <div class="tab-pane fade" id="summary" role="tabpanel">
+              <!-- summary for each Chapter Tab -->
+              <div class="tab-pane fade" id="summaries" role="tabpanel">
                 <div class="mb-3">
-                  <button id="summaryButton" class="btn btn-outline-purple rounded-pill">
-                    <i class="fas fa-magic me-2"></i>Charger le résumé
+                  <button id="summariesButton" class="btn btn-outline-purple rounded-pill">
+                    <i class="fas fa-sync me-2"></i>Charger les résumés
                   </button>
                 </div>
-                <div id="summaryResult" class="bg-light rounded-4 p-4" style="min-height: 300px;">
-                  {% if not raw_text %}
-                    <div class="text-center py-5">
-                      <i class="fas fa-compress-alt text-muted mb-3" style="font-size: 2rem;"></i>
-                      <em class="text-muted">Importez un podcast pour générer un résumé.</em>
+                <div class="row">
+                  <div class="col-md-4">
+                    <ul id="summariesList" class="list-group list-group-flush">
+                      {% if not raw_text %}
+                        <li class="list-group-item border-0 text-muted">
+                          Importez un podcast pour voir les résumés.
+                        </li>
+                      {% endif %}
+                    </ul>
+                  </div>
+                  <div class="col-md-8">
+                    <div id="summaryContent" class="bg-light rounded-4 p-4" style="min-height: 300px;">
+                      {% if not raw_text %}
+                        <div class="text-center py-5">
+                          <i class="fas fa-book-open text-muted mb-3" style="font-size: 2rem;"></i>
+                          <em class="text-muted">Sélectionnez un résumé pour voir son contenu.</em>
+                        </div>
+                      {% else %}
+                        <div class="text-center py-5">
+                          <i class="fas fa-book-open text-muted mb-3" style="font-size: 2rem;"></i>
+                          <em class="text-muted">Choisissez un résumé dans la liste à gauche.</em>
+                        </div>
+                      {% endif %}
                     </div>
-                  {% else %}
-                    <div class="text-center py-5">
-                      <i class="fas fa-compress-alt text-muted mb-3" style="font-size: 2rem;"></i>
-                      <em class="text-muted">Cliquez sur "Charger le résumé" pour voir le résumé.</em>
-                    </div>
-                  {% endif %}
+                  </div>
                 </div>
               </div>
-
+              <!-- Global Summary Tab -->
+              <div class="tab-pane fade" id="global-summary" role="tabpanel">
+                <div class="mb-3">
+                  <button id="globalSummaryButton" class="btn btn-outline-purple rounded-pill">
+                    <i class="fas fa-sync me-2"></i>résumé global
+                  </button>
+                </div>
+                <div id="global-summary-content" class="bg-light rounded-4 p-4" style="min-height: 300px;">
+                  <p class="text-muted text-center">Cliquez sur le bouton pour charger le résumé global.</p>
+                </div>
+              </div>
               <!-- Questions Tab -->
               <div class="tab-pane fade" id="questions" role="tabpanel">
                 <!-- Chat Window -->
@@ -614,38 +650,118 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 
-  // --- 4) Résumé (GET /get_summary) --- #
-  const summaryBtn = document.getElementById("summaryButton");
-  if (summaryBtn) {
-    const summaryResult = document.getElementById("summaryResult");
+  // --- 4) Résumés de chaque chapitre (GET /get_summaries) --- #
+  const summariesBtn = document.getElementById("summariesButton");
+  if (summariesBtn) {
+    const summariesList   = document.getElementById("summariesList");
+    const summaryContent = document.getElementById("summaryContent");
 
-    summaryBtn.addEventListener("click", function() {
-      summaryBtn.disabled = true;
-      summaryBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Chargement…';
+    summariesBtn.addEventListener("click", function() {
+      summariesBtn.disabled = true;
+      summariesBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Chargement…';
 
-      fetch("/get_summary")
+      fetch("/get_summaries")
         .then(res => res.json())
         .then(data => {
+          // Si l’API renvoie une erreur
           if (data.error) {
-            summaryResult.innerHTML = `<div class="alert alert-danger rounded-4">${data.error}</div>`;
-            summaryBtn.disabled = false;
-            summaryBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Charger le résumé';
+            summariesList.innerHTML = `<li class="list-group-item text-danger border-0">${data.error}</li>`;
+            summariesBtn.disabled = false;
+            summariesBtn.innerHTML = '<i class="fas fa-sync me-2"></i>Charger les résumés';
             return;
           }
-          summaryResult.innerHTML = `<div class="lh-lg">${data.summary}</div>`;
-          summaryBtn.disabled = false;
-          summaryBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Recharger le résumé';
+
+          // Aucun résumé retourné (tableau vide)
+          if (!Array.isArray(data.summaries) || data.summaries.length === 0) {
+            summariesList.innerHTML = `
+              <li class="list-group-item text-muted border-0">
+                Aucun résumé disponible. Importez d’abord un podcast.
+              </li>`;
+            summariesBtn.disabled = false;
+            summariesBtn.innerHTML = '<i class="fas fa-sync me-2"></i>Charger les résumés';
+            return;
+          }
+
+          // Affichage des résumés retrouvés
+          let html = "";
+          data.summaries.forEach(summary => {
+            html += `
+              <li class="list-group-item summary-item border-0 rounded-3 mb-2" data-index="${summary.index}" style="cursor: pointer;">
+                <i class="fas fa-file-alt me-2 text-purple"></i>${summary.title}
+              </li>`;
+          });
+          summariesList.innerHTML = html;
+          summariesBtn.disabled = false;
+          summariesBtn.innerHTML = '<i class="fas fa-sync me-2"></i>Recharger les résumés';
+
+          // Ajout des écouteurs de clic pour chaque résumé
+          document.querySelectorAll(".summary-item").forEach(el => {
+            el.addEventListener("click", function() {
+              // Surbrillance de l’élément sélectionné
+              document.querySelectorAll(".summary-item").forEach(item => item.classList.remove("bg-light"));
+              this.classList.add("bg-light");
+
+              const idx = this.dataset.index;
+              fetch(`/get_summary_content/${idx}`)
+                .then(resp => resp.json())
+                .then(respData => {
+                  if (respData.error) {
+                    summaryContent.innerHTML = `<div class="alert alert-danger rounded-4">${respData.error}</div>`;
+                    return;
+                  }
+                  summaryContent.innerHTML = `
+                    <h5 class="fw-bold mb-3">${data.summaries[idx].title}</h5>
+                    <p class="lh-lg">${respData.summary}</p>
+                  `;
+                })
+                .catch(err => {
+                  console.error(err);
+                  summaryContent.innerHTML = `<div class="alert alert-danger rounded-4">Erreur chargement résumé.</div>`;
+                });
+            });
+          });
         })
         .catch(err => {
           console.error(err);
-          summaryResult.innerHTML = `<div class="alert alert-danger rounded-4">Erreur réseau.</div>`;
-          summaryBtn.disabled = false;
-          summaryBtn.innerHTML = '<i class="fas fa-magic me-2"></i>Charger le résumé';
+          summariesList.innerHTML = `<li class="list-group-item text-danger border-0">Erreur réseau.</li>`;
+          summariesBtn.disabled = false;
+          summariesBtn.innerHTML = '<i class="fas fa-sync me-2"></i>Charger les résumés';
         });
     });
   }
+  
 
-  // --- 5) RAG Chat (POST /rag_chat) --- #
+  // --- 5) Resumé global (GET /get_global_summary) --- #
+  const globalSummaryButton = document.getElementById("globalSummaryButton");
+  const globalSummaryContent = document.getElementById("global-summary-content");
+
+  globalSummaryButton.addEventListener("click", function() {
+    globalSummaryButton.disabled = true;
+    globalSummaryButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Chargement…';
+
+    fetch("/get_global_summary")
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          globalSummaryContent.innerHTML = `<div class="alert alert-danger rounded-4">${data.error}</div>`;
+          return;
+        }
+        globalSummaryContent.innerHTML = `
+          <h5 class="fw-bold mb-3">Résumé Global</h5>
+          <p class="lh-lg">${data.global_summary}</p>
+        `;
+      })
+      .catch(err => {
+        console.error(err);
+        globalSummaryContent.innerHTML = `<div class="alert alert-danger rounded-4">Erreur chargement résumé global.</div>`;
+      })
+      .finally(() => {
+        globalSummaryButton.disabled = false;
+        globalSummaryButton.innerHTML = '<i class="fas fa-sync me-2"></i>Charger le résumé global';
+      });
+  });
+
+  // --- 6) RAG Chat (POST /rag_chat) --- #
   const askBtn = document.getElementById("askButton");
   const questionInput = document.getElementById("questionInput");
   const chatWindow = document.getElementById("chatWindow");

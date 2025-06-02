@@ -1,5 +1,6 @@
 # app.py
 
+import json
 import os
 import uuid
 import logging
@@ -19,9 +20,11 @@ from werkzeug.utils import secure_filename
 from rag_utils import process_transcript, build_and_get_rag_chain
 
 # Fonction de découpages textuels (chunks) si nécessaire
-from chunking import get_text_chunks
+# Removed unused import
 # Fonction de segmentation en chapitres
 from chaptering import segment_by_topic
+from model import summarize_chapters_and_global
+
 
 app = Flask(__name__)
 app.secret_key = "une_clé_quelconque_pour_la_session"
@@ -103,7 +106,7 @@ def index():
     # Lecture de l’état pour le template
     raw_text = state["raw_text"]
     audio_filename = state["audio_filename"]
-    rag_ready = state["rag_ready"]
+    # Removed unused variable
 
     if request.method == "POST":
         source_type = request.form.get("source_type", "")
@@ -190,7 +193,7 @@ def index():
                         state["chain"] = chain
                         state["retriever"] = retriever
                         state["rag_ready"] = True
-                        rag_ready = True
+                        # Removed unused variable
                         logger.info("Pipeline RAG initialisée avec succès.")
                     except Exception as e:
                         logger.error(f"Erreur build_and_get_rag_chain : {e}")
@@ -231,14 +234,51 @@ def get_chapters():
 
     # Segmente en chapitres
     chapters_list = segment_by_topic(raw_text, threshold=0.5)
+    # create title list
+    titles  = ["Chapter "+str(i+1) for i in range(len(chapters_list))]
+    # save titles to titles.json
+    with open("data/titles.json", "w", encoding="utf-8") as f:
+        json.dump({"titles": titles}, f, ensure_ascii=False, indent=4)
+
+    # save chapters_list to chapters.json
+    with open("data/chapters.json", "w", encoding="utf-8") as f:
+        json.dump({"chapters": chapters_list}, f, ensure_ascii=False, indent=4)
+
     json_chapters = []
     for idx, chap_text in enumerate(chapters_list):
-        title = chap_text[:50].strip()
-        if len(chap_text) > 50:
-            title += "…"
+        title = titles[idx]
         json_chapters.append({ "index": idx, "title": title })
 
     return jsonify({ "chapters": json_chapters }), 200
+
+# -----------------------------
+#   GET /get_summaries
+# -----------------------------
+@app.route("/get_summaries", methods=["GET"])
+def get_summaries():
+    state = _get_user_state()
+    raw_text = state["raw_text"] or ""
+    if not raw_text:
+        return jsonify({ "error": "Aucune transcription en mémoire." }), 400
+
+    chapters_list = segment_by_topic(raw_text, threshold=0.45)
+    if not chapters_list:
+        return jsonify({ "error": "Aucun chapitre à résumer." }), 400
+
+    summaries = summarize_chapters_and_global(chapters_list, model_path=os.getenv("MODEL_PATH"),
+                                        output_path="data/summaries.json")["chapter_summaries"]
+    # get titles from data/titles
+    with open("data/titles.json", "r") as f:
+        title_list = json.load(f)["titles"]
+    json_summaries = []
+    for idx, summary in enumerate(summaries):
+        json_summaries.append({
+            "index": idx,
+            "title": title_list[idx],
+            "summary": summary
+        })
+
+    return jsonify({ "summaries": json_summaries }), 200
 
 
 # -----------------------------
@@ -251,32 +291,58 @@ def get_chapter_content(index):
     if not raw_text:
         return jsonify({ "error": "Aucune transcription en mémoire." }), 400
 
-    chapters_list = segment_by_topic(raw_text, threshold=0.5)
+    # get chapters from data/chapters.json
+    with open("data/chapters.json", "r") as f:
+        chapters_list = json.load(f)["chapters"]
     if index < 0 or index >= len(chapters_list):
         return jsonify({ "error": "Index de chapitre invalide." }), 400
 
     return jsonify({ "content": chapters_list[index] }), 200
 
 
+
 # -----------------------------
-#   GET /get_summary
+#   GET /get_summary_content/<index>
 # -----------------------------
-@app.route("/get_summary", methods=["GET"])
-def get_summary():
+@app.route("/get_summary_content/<int:index>")
+def get_summary_content(index):
     state = _get_user_state()
     raw_text = state["raw_text"] or ""
     if not raw_text:
-        return jsonify({ "error": "Aucune transcription pour générer un résumé." }), 400
+        return jsonify({ "error": "Aucune transcription en mémoire." }), 400
 
-    # ==== ICI : vous appelez votre fonction de résumé (par ex. un T5‐Small) ====
-    # Pour l’exemple, je vais simplement renvoyer les 200 premiers caractères
-    # et un "..." afin de montrer la mécanique. Remplacez ceci par votre propre modèle.
+    # get summaries from data/summaries.json
+    with open("data/summaries.json", "r") as f:
+        summaries_list = json.load(f)["chapter_summaries"]
+    
 
-    # --- Exemple très simplifié (à remplacer) ---
-    summary_text = raw_text[:200] + "…"
-    # ------------------------------------------------------------------
+    if index < 0 or index >= len(summaries_list):
+        return jsonify({ "error": "Index de résumé invalide." }), 400
 
-    return jsonify({ "summary": summary_text }), 200
+    return jsonify({
+        "title": "Résumé " + str(index + 1),
+        "summary": summaries_list[index]
+    }), 200
+
+
+# -----------------------------
+#   GET /get_global_summary
+# -----------------------------
+@app.route("/get_global_summary", methods=["GET"])
+def get_global_summary():
+    state = _get_user_state()
+    raw_text = state["raw_text"] or ""
+    if not raw_text:
+        return jsonify({ "error": "Aucune transcription en mémoire." }), 400
+    
+    chapters_list = segment_by_topic(raw_text, threshold=0.45)
+    if not chapters_list:
+        return jsonify({ "error": "Aucun chapitre à résumer." }), 400
+
+    global_summary = summarize_chapters_and_global(chapters_list,
+                                                   model_path=os.getenv("MODEL_PATH"),
+                                                   output_path="data/summaries.json")["global_summary"]
+    return jsonify({ "global_summary": global_summary }), 200
 
 
 # -----------------------------
