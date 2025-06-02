@@ -233,7 +233,7 @@ def get_chapters():
         return jsonify({ "chapters": [] }), 200
 
     # Segmente en chapitres
-    chapters_list = segment_by_topic(raw_text, threshold=0.5)
+    chapters_list = segment_by_topic(raw_text, threshold=0.25)
     # create title list
     titles  = ["Chapter "+str(i+1) for i in range(len(chapters_list))]
     # save titles to titles.json
@@ -261,7 +261,7 @@ def get_summaries():
     if not raw_text:
         return jsonify({ "error": "Aucune transcription en mémoire." }), 400
 
-    chapters_list = segment_by_topic(raw_text, threshold=0.45)
+    chapters_list = segment_by_topic(raw_text, threshold=0.25)
     if not chapters_list:
         return jsonify({ "error": "Aucun chapitre à résumer." }), 400
 
@@ -335,7 +335,7 @@ def get_global_summary():
     if not raw_text:
         return jsonify({ "error": "Aucune transcription en mémoire." }), 400
     
-    chapters_list = segment_by_topic(raw_text, threshold=0.45)
+    chapters_list = segment_by_topic(raw_text, threshold=0.25)
     if not chapters_list:
         return jsonify({ "error": "Aucun chapitre à résumer." }), 400
 
