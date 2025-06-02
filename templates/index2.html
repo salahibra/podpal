@@ -334,12 +334,12 @@
                   {% else %}
                     <div class="d-flex mb-3">
                       <div class="bg-white rounded-4 p-3 shadow-sm" style="max-width: 80%;">
-                        <p class="mb-2">Questions suggérées :</p>
+                        <!--<p class="mb-2">Questions suggérées :</p>
                         <div class="d-flex flex-wrap gap-2">
                           <span class="badge bg-light text-dark rounded-pill px-3 py-2 suggested-question" style="cursor: pointer;">"Quels sont les principaux défis éthiques de l'IA ?"</span>
                           <span class="badge bg-light text-dark rounded-pill px-3 py-2 suggested-question" style="cursor: pointer;">"Comment l'IA va-t-elle impacter le marché du travail ?"</span>
                           <span class="badge bg-light text-dark rounded-pill px-3 py-2 suggested-question" style="cursor: pointer;">"Quelles sont les applications concrètes de l'IA aujourd'hui ?"</span>
-                        </div>
+                        </div>-->
                       </div>
                     </div>
                   {% endif %}
@@ -370,51 +370,30 @@
       </div>
 
       <!-- Right Column - Recommended Podcasts -->
-      <div class="col-lg-4">
-        <div class="card border-0 shadow-sm rounded-4">
-          <div class="card-body p-4">
-            <h5 class="fw-bold mb-4">Podcasts Recommandés</h5>
+<div class="col-lg-4">
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-4">
+      <h5 class="fw-bold mb-4">Podcasts Recommandés</h5>
 
-            <!-- Podcast Card 1 -->
-            <div class="d-flex align-items-center mb-4 p-3 rounded-4 bg-light">
-              <div class="me-3">
-                <img src="https://via.placeholder.com/60x60/8B5CF6/FFFFFF?text=AI" class="rounded-3" alt="Technologie" style="width: 60px; height: 60px; object-fit: cover;" />
-              </div>
-              <div class="flex-grow-1">
-                <span class="badge bg-purple text-white mb-1">Technologie</span>
-                <h6 class="mb-1 fw-semibold">L'impact de l'IA en 2025</h6>
-                <p class="text-muted mb-0 small">45:30</p>
-              </div>
-            </div>
+      <!-- Bouton pour charger les recommandations -->
+      <div class="mb-3">
+        <button id="recommendButton" class="btn btn-outline-purple rounded-pill w-100">
+          <i class="fas fa-sync me-2"></i>Charger les recommandations
+        </button>
+      </div>
 
-            <!-- Podcast Card 2 -->
-            <div class="d-flex align-items-center mb-4 p-3 rounded-4 bg-light">
-              <div class="me-3">
-                <img src="https://via.placeholder.com/60x60/10B981/FFFFFF?text=RB" class="rounded-3" alt="Innovation" style="width: 60px; height: 60px; object-fit: cover;" />
-              </div>
-              <div class="flex-grow-1">
-                <span class="badge bg-success text-white mb-1">Innovation</span>
-                <h6 class="mb-1 fw-semibold">Robots et Société</h6>
-                <p class="text-muted mb-0 small">32:15</p>
-              </div>
-            </div>
-
-            <!-- Podcast Card 3 -->
-            <div class="d-flex align-items-center mb-4 p-3 rounded-4 bg-light">
-              <div class="me-3">
-                <img src="https://via.placeholder.com/60x60/059669/FFFFFF?text=TN" class="rounded-3" alt="Tech News" style="width: 60px; height: 60px; object-fit: cover;" />
-              </div>
-              <div class="flex-grow-1">
-                <span class="badge bg-info text-white mb-1">Tech News</span>
-                <h6 class="mb-1 fw-semibold">Données et Confidentialité</h6>
-                <p class="text-muted mb-0 small">28:45</p>
-              </div>
-            </div>
+      <!-- Conteneur où seront injectées les recommandations -->
+      <div id="recommendationsList">
+        {% if not raw_text %}
+          <div class="text-muted py-3 text-center">
+            Importez un podcast pour voir les recommandations.
           </div>
-        </div>
+        {% endif %}
       </div>
     </div>
   </div>
+</div>
+
 
   <!-- Custom Inline Styles (you can move to static/css/styles.css if preferred) -->
   <style>
@@ -860,6 +839,81 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
   }
+});
+document.addEventListener("DOMContentLoaded", function() {
+  const recommendButton = document.getElementById("recommendButton");
+  const recommendationsList = document.getElementById("recommendationsList");
+
+  if (!recommendButton) return;
+
+  recommendButton.addEventListener("click", function() {
+    // Désactiver le bouton et afficher l’icône de chargement
+    recommendButton.disabled = true;
+    recommendButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Chargement…';
+
+    fetch("/get_recommendations")
+      .then(res =>
+        res.json().then(data => ({ status: res.status, body: data }))
+      )
+      .then(({ status, body }) => {
+        // En cas d’erreur renvoyée par l’API
+        if (status !== 200) {
+          recommendationsList.innerHTML = `
+            <div class="alert alert-danger rounded-4">
+              ${body.error || "Une erreur est survenue."}
+            </div>
+          `;
+          recommendButton.disabled = false;
+          recommendButton.innerHTML = '<i class="fas fa-sync me-2"></i>Recharger les recommandations';
+          return;
+        }
+
+        // Si la liste est vide
+        if (!Array.isArray(body.recommendations) || body.recommendations.length === 0) {
+          recommendationsList.innerHTML = `
+            <div class="text-muted py-3 text-center">
+              Aucune recommandation disponible.
+            </div>
+          `;
+          recommendButton.disabled = false;
+          recommendButton.innerHTML = '<i class="fas fa-sync me-2"></i>Recharger les recommandations';
+          return;
+        }
+
+        // Sinon, on construit chaque carte de recommandation
+        let html = "";
+        body.recommendations.forEach(rec => {
+          html += `
+            <a href="${rec.episode_link}" target="_blank"
+               class="list-group-item list-group-item-action mb-2 rounded-4 shadow-sm">
+              <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">
+                  ${rec.podcast_title}
+                  <small class="text-muted">– ${rec.episode_title}</small>
+                </h6>
+                <small class="text-muted">${rec.score.toFixed(2)}</small>
+              </div>
+              <p class="mb-0 text-truncate">${rec.description}</p>
+            </a>
+          `;
+        });
+
+        // On injecte le HTML dans le conteneur
+        recommendationsList.innerHTML = `<div class="list-group">${html}</div>`;
+
+        // Réactiver le bouton
+        recommendButton.disabled = false;
+        recommendButton.innerHTML = '<i class="fas fa-sync me-2"></i>Recharger les recommandations';
+      })
+      .catch(err => {
+        console.error(err);
+        recommendationsList.innerHTML = `
+          <div class="alert alert-danger rounded-4">Erreur réseau.</div>
+        `;
+        recommendButton.disabled = false;
+        recommendButton.innerHTML = '<i class="fas fa-sync me-2"></i>Recharger les recommandations';
+      });
+  });
 });
 </script>
 {% endblock %}

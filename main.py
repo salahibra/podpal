@@ -379,6 +379,79 @@ def rag_chat():
         "sources": sources
     }), 200
 
+import recommandation
+from build_podcast_vectorstore import build_podcast_chroma_index
+@app.route("/build_index_podcasts", methods=["GET"])
+def build_index_podcasts():
+    """
+    Cette route appelle directement la fonction `build_podcast_chroma_index`
+    qui se trouve dans `recommandation.py`. Elle reconstruit l’index Chroma
+    des épisodes de podcast stockés dans './podcast_dataset/podcast_epds_dataset.json'.
+    """
+    try:
+        # Appel à votre fonction pré-existante
+        build_podcast_chroma_index(persist_dir="data/vectorstores/podcast_eps")
+        return jsonify({"status": "Index Chroma des podcasts reconstruit avec succès."}), 200
+
+    except Exception as e:
+        logger.error(f"Erreur lors de build_podcast_chroma_index : {e}")
+        return jsonify({"error": f"Échec de la construction de l’index : {str(e)}"}), 500
+
+@app.route("/get_recommendations", methods=["GET"])
+def get_recommendations():
+    """
+    Cette route appelle directement la fonction `run_recommendation_from_summary_chroma`
+    qui se trouve dans `recommandation.py`. Elle renvoie en JSON la liste des recommandations.
+
+    ATTENTION :
+      - run_recommendation_from_summary_chroma affiche par défaut les résultats au format console.
+      - Pour la retourner en JSON, on adapte un peu son appel en interceptant la liste qu'elle génère.
+    """
+
+    try:
+        # run_recommendation_from_summary_chroma attend par défaut top_k=5 et persiste dans "data/vectorstores/podcast_eps"
+        # Mais pour récupérer ses recommandations au lieu de juste les afficher, on modifie légèrement son code
+        # pour qu'il renvoie la liste. On crée un wrapper temporaire ici.
+
+        # On duplique l'essentiel de run_recommendation_from_summary_chroma pour récupérer la liste :
+        from recommandation import load_global_summary
+        from langchain.vectorstores import Chroma
+        from langchain.embeddings import HuggingFaceEmbeddings
+
+        # 1) Charger le résumé global
+        global_summary = load_global_summary(filepath="data/summaries.json")
+
+        # 2) Préparer l’embedder + recharger l’index Chroma (persisté précédemment)
+        embedding_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        persist_dir = "data/vectorstores/podcast_eps"
+        vectorstore = Chroma(persist_directory=persist_dir, embedding_function=embedding_model)
+
+        # 3) Lancer la recherche de similarité (on prend top_k=5)
+        top_k = 5
+        results = vectorstore.similarity_search_with_relevance_scores(global_summary, k=top_k)
+
+        # 4) Construire la liste de recommandations sous forme de dict
+        recommendations = []
+        for rank, (doc, score) in enumerate(results, start=1):
+            meta = doc.metadata or {}
+            recommendations.append({
+                "rank": rank,
+                "podcast_title": meta.get("podcast_title", "Unknown"),
+                "episode_title": meta.get("episode_title", "Unknown"),
+                "description": doc.page_content,
+                "episode_link": meta.get("episode_link", "N/A"),
+                "score": float(score)
+            })
+
+        return jsonify({"recommendations": recommendations}), 200
+
+    except FileNotFoundError as fnf:
+        logger.error(f"Fichier introuvable : {fnf}")
+        return jsonify({"error": f"Fichier non trouvé : {str(fnf)}"}), 500
+
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération des recommandations : {e}")
+        return jsonify({"error": f"Échec des recommandations : {str(e)}"}), 500
 
 # -----------------------------
 #   Lancement de l’application
