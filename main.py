@@ -123,9 +123,21 @@ def index():
                     logger.info(f"Ingestion depuis YouTube : {yt_url}")
                     from transcription import download_audio_from_youtube, transcribe_file
 
+                    # 1) Download the audio to a temporary path (e.g. /tmp/xyz.wav)
                     wav_path = download_audio_from_youtube(yt_url)
-                    audio_filename = os.path.basename(wav_path)
-                    raw_text = transcribe_file(wav_path, beam_size=5)
+                    basename = os.path.basename(wav_path)
+
+                    # 2) Move it into UPLOAD_FOLDER so send_from_directory can find it
+                    new_path = os.path.join(app.config["UPLOAD_FOLDER"], basename)
+                    os.replace(wav_path, new_path)
+                    # (If you prefer to copy instead of move, you could use `shutil.copy(wav_path, new_path)`)
+
+                    # 3) Transcribe the file now located at new_path
+                    raw_text = transcribe_file(new_path, beam_size=5)
+
+                    # 4) Remember only the filename (Flask will serve /uploads/<audio_filename>)
+                    audio_filename = basename
+
                 except Exception as e:
                     logger.error(f"Erreur ingestion YouTube : {e}")
                     error = "Échec de la récupération ou de la transcription de l’audio YouTube."
@@ -162,10 +174,12 @@ def index():
                     logger.info(f"Ingestion depuis fichier texte local : {txt_path}")
                     with open(txt_path, "r", encoding="utf-8") as f:
                         raw_text = f.read()
+                    # No audio file to play in this branch
                     audio_filename = None
                 except Exception as e:
                     logger.error(f"Impossible de lire le fichier texte : {e}")
                     error = "Erreur lors de la lecture du fichier texte."
+
 
         else:
             error = "Type de source inconnu."
@@ -457,6 +471,6 @@ def get_recommendations():
 #   Lancement de l’application
 # -----------------------------
 if __name__ == "__main__":
-    # Créez le dossier UPLOAD_FOLDER s’il n’existe pas
+    
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
     app.run(debug=True)
