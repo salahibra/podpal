@@ -4,7 +4,7 @@ from langchain.vectorstores import Chroma
 from langchain.embeddings import HuggingFaceEmbeddings
 from sklearn.metrics.pairwise import cosine_similarity
 
-def load_test_summaries(filepath='./podcast_dataset/episode_descriptions.json'):
+def load_test_summaries(filepath='./podcast_dataset/podcast_test.json'):
     with open(filepath, 'r', encoding='utf-8') as f:
         data = json.load(f)
     return data['summaries']
