@@ -1,7 +1,7 @@
-
 import chaptering
 import os
 import logging
+
 from rag_utils import (
     ingest_transcript,
     process_transcript,
@@ -9,6 +9,7 @@ from rag_utils import (
     ask_questions_loop
 )
 import model
+import recommandation
 # Configurer le logger global
 logging.basicConfig(
     level=logging.INFO,
@@ -49,9 +50,20 @@ def main():
     print(f"Résumé global : {summaries['global_summary']}\n")
     for i, summary in enumerate(summaries['chapter_summaries'], 1):
         print(f"Résumé Chapitre {i} : {summary}\n")
+    
+    
     # 2) Prétraitement : chunking + indexation Chroma
     persist_dir = "data/vectorstores/chunks"
     process_transcript(raw_text, persist_dir=persist_dir)
+
+
+    #Recommandation
+    #recommandation.run_recommendation_from_summary()
+    recommandation.run_recommendation_from_summary_chroma()
+
+
+
+
 
     # 3) Construction de la chaîne RAG
     try:
@@ -62,6 +74,8 @@ def main():
     
     # 4) Boucle interactive de Q&A
     ask_questions_loop(chain, retriever)
+
+    
 
 
 if __name__ == "__main__":

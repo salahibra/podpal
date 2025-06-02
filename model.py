@@ -7,6 +7,7 @@ def summarize_chapters_and_global(chapters, model_path, output_path="summaries.j
     # Charger le modèle fine-tuné
     tokenizer = AutoTokenizer.from_pretrained(model_path, local_files_only=True)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_path, local_files_only=True)
+
     model = model.to("cuda" if torch.cuda.is_available() else "cpu")
 
     summaries = []
